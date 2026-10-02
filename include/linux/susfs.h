@@ -183,4 +183,25 @@ int susfs_sus_su(struct st_sus_su* __user user_info);
 /* susfs_init */
 void susfs_init(void);
 
+/* ===== compatibility shims for SukiSU-Ultra 4.x supercall ===== */
+void susfs_enable_log(void __user **user_info);
+int susfs_get_enabled_features(void __user **user_info);
+int susfs_show_variant(void __user **user_info);
+int susfs_show_version(void __user **user_info);
+int susfs_set_avc_log_spoofing(void __user **user_info);
+void susfs_start_sdcard_monitor_fn(void);
+int susfs_add_sus_path_loop(struct st_susfs_sus_path* __user user_info);
+int susfs_set_hide_sus_mnts_for_non_su_procs(void __user **user_info);
+
+/* string helpers */
+bool susfs_starts_with(const char *str, const char *prefix);
+bool susfs_ends_with(const char *str, const char *suffix);
+
+/* per-process flags */
+void susfs_set_current_proc_no_su(void);
+void susfs_set_current_proc_umounted(void);
+void susfs_set_current_proc_umounted_for_zygote_next(void);
+bool susfs_is_current_proc_umounted(void);
+bool susfs_is_current_proc_umounted_for_zygote_next(void);
+
 #endif

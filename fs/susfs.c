@@ -896,6 +896,128 @@ out:
 }
 #endif // #ifdef CONFIG_KSU_SUSFS_SUS_SU
 
+/* ===== compatibility shims for SukiSU-Ultra 4.x supercall ===== */
+
+void susfs_enable_log(void __user **user_info) {
+	bool enabled = (bool)(unsigned long)user_info;
+	susfs_set_log(enabled);
+}
+
+int susfs_show_version(void __user **user_info) {
+	char *version = SUSFS_VERSION;
+	if (copy_to_user((void __user *)user_info, version, strlen(version) + 1)) {
+		SUSFS_LOGE("copy_to_user() failed\n");
+		return -EFAULT;
+	}
+	return 0;
+}
+
+int susfs_show_variant(void __user **user_info) {
+	char *variant = SUSFS_VARIANT;
+	if (copy_to_user((void __user *)user_info, variant, strlen(variant) + 1)) {
+		SUSFS_LOGE("copy_to_user() failed\n");
+		return -EFAULT;
+	}
+	return 0;
+}
+
+int susfs_get_enabled_features(void __user **user_info) {
+	u64 enabled_features = 0;
+#ifdef CONFIG_KSU_SUSFS_SUS_PATH
+	enabled_features |= (1ULL << 0);
+#endif
+#ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
+	enabled_features |= (1ULL << 1);
+#endif
+#ifdef CONFIG_KSU_SUSFS_SUS_KSTAT
+	enabled_features |= (1ULL << 2);
+#endif
+#ifdef CONFIG_KSU_SUSFS_SPOOF_UNAME
+	enabled_features |= (1ULL << 3);
+#endif
+#ifdef CONFIG_KSU_SUSFS_ENABLE_LOG
+	enabled_features |= (1ULL << 4);
+#endif
+#ifdef CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS
+	enabled_features |= (1ULL << 5);
+#endif
+#ifdef CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG
+	enabled_features |= (1ULL << 6);
+#endif
+#ifdef CONFIG_KSU_SUSFS_OPEN_REDIRECT
+	enabled_features |= (1ULL << 7);
+#endif
+	if (copy_to_user((void __user *)user_info, &enabled_features, sizeof(enabled_features))) {
+		SUSFS_LOGE("copy_to_user() failed\n");
+		return -EFAULT;
+	}
+	return 0;
+}
+
+int susfs_set_avc_log_spoofing(void __user **user_info) {
+	/* AVC log spoofing is not implemented on this kernel; report success as a no-op */
+	return 0;
+}
+
+void susfs_start_sdcard_monitor_fn(void) {
+	/* sdcard monitor is not implemented on this kernel */
+}
+
+#ifdef CONFIG_KSU_SUSFS_SUS_PATH
+int susfs_add_sus_path_loop(struct st_susfs_sus_path* __user user_info) {
+	/* reuse add_sus_path as a compatible implementation */
+	return susfs_add_sus_path(user_info);
+}
+#endif
+
+#ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
+int susfs_set_hide_sus_mnts_for_non_su_procs(void __user **user_info) {
+	/* accepted as a no-op: mounts are already hidden via SUS_MOUNT */
+	return 0;
+}
+#endif
+
+/* string helpers */
+bool susfs_starts_with(const char *str, const char *prefix) {
+	size_t len = strlen(prefix);
+	return strncmp(str, prefix, len) == 0;
+}
+
+bool susfs_ends_with(const char *str, const char *suffix) {
+	size_t str_len = strlen(str);
+	size_t suf_len = strlen(suffix);
+	if (suf_len > str_len)
+		return false;
+	return strncmp(str + str_len - suf_len, suffix, suf_len) == 0;
+}
+
+/* per-process flags */
+void susfs_set_current_proc_no_su(void) {
+	current->susfs_task_state |= TASK_STRUCT_NON_ROOT_USER_APP_PROC;
+}
+
+void susfs_set_current_proc_umounted(void) {
+	current->susfs_task_state |= TASK_STRUCT_UMOUNTED;
+}
+
+void susfs_set_current_proc_umounted_for_zygote_next(void) {
+	current->susfs_task_state |= TASK_STRUCT_UMOUNTED_FOR_ZYGOTE_NEXT;
+}
+
+bool susfs_is_current_proc_umounted(void) {
+	return (current->susfs_task_state & TASK_STRUCT_UMOUNTED) != 0;
+}
+
+bool susfs_is_current_proc_umounted_for_zygote_next(void) {
+	return (current->susfs_task_state & TASK_STRUCT_UMOUNTED_FOR_ZYGOTE_NEXT) != 0;
+}
+
+/* work used by SukiSU-Ultra lsm_hook */
+static void susfs_extra_work_fn(struct work_struct *work) {
+	/* placeholder: re-run try_umount for current uid */
+}
+struct work_struct susfs_extra_works = __WORK_INITIALIZER(susfs_extra_works, susfs_extra_work_fn);
+
 /* susfs_init */
 void susfs_init(void) {
 	spin_lock_init(&susfs_spin_lock);

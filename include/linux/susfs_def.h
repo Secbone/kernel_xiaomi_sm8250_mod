@@ -25,6 +25,16 @@
 #define CMD_SUSFS_IS_SUS_SU_READY 0x555f0
 #define CMD_SUSFS_SUS_SU 0x60000
 
+/* additional CMDs required by SukiSU-Ultra 4.x supercall */
+#define CMD_SUSFS_ADD_SUS_PATH_LOOP 0x55551
+#define CMD_SUSFS_HIDE_SUS_MNTS_FOR_NON_SU_PROCS 0x55561
+#define CMD_SUSFS_ADD_SUS_MAP 0x555d1
+#define CMD_SUSFS_ENABLE_AVC_LOG_SPOOFING 0x555a1
+
+#ifndef SUSFS_MAGIC
+#define SUSFS_MAGIC 0xFAFAFAFA
+#endif
+
 #define SUSFS_MAX_LEN_PATHNAME 256 // 256 should address many paths already unless you are doing some strange experimental stuff, then set your own desired length
 #define SUSFS_FAKE_CMDLINE_OR_BOOTCONFIG_SIZE 4096
 
@@ -52,6 +62,8 @@
 #define INODE_STATE_OPEN_REDIRECT BIT(27)
 
 #define TASK_STRUCT_NON_ROOT_USER_APP_PROC BIT(24)
+#define TASK_STRUCT_UMOUNTED BIT(25)
+#define TASK_STRUCT_UMOUNTED_FOR_ZYGOTE_NEXT BIT(26)
 
 #define MAGIC_MOUNT_WORKDIR "/debug_ramdisk/workdir"
 #define DATA_ADB_UMOUNT_FOR_ZYGOTE_SYSTEM_PROCESS "/data/adb/susfs_umount_for_zygote_system_process"
