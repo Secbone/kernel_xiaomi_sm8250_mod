@@ -46,11 +46,23 @@ jobs:
           aarch64-linux-gnu-ld --version | head -1
           arm-linux-gnueabi-ld --version | head -1
 
+      - name: Debug config check
+        run: |
+          echo "checking drivers/kernelsu presence after setup will happen during build"
+
       - name: Build kernel
         run: |
           export CCACHE_DIR="$HOME/.ccache"
           ccache -M 2G
           bash build.sh ${{ github.event.inputs.device }} ${{ github.event.inputs.variant }} 2>&1 | tee build.log
+
+      - name: Show KSU config result
+        if: always()
+        run: |
+          echo "=== out/.config KSU lines ==="
+          grep -E "CONFIG_KSU" out/.config 2>/dev/null | head -30 || echo "no out/.config"
+          echo "=== kernelsu objs built ==="
+          find out/drivers/kernelsu -name "*.o" 2>/dev/null | head -30 || echo "none"
 
       - name: Collect artifacts
         if: always()
