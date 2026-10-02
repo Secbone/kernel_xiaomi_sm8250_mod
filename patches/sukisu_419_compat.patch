@@ -51,7 +51,7 @@ index e45f01f..c9ba12f 100644
              return ksu_sulog_copy_empty_string(dst);
  
 diff --git a/kernel/supercall/dispatch.c b/kernel/supercall/dispatch.c
-index c1d3aba..57afc6f 100644
+index c1d3aba..f0d9444 100644
 --- a/kernel/supercall/dispatch.c
 +++ b/kernel/supercall/dispatch.c
 @@ -401,10 +401,10 @@ int ksu_handle_sys_reboot(int magic1, int magic2, unsigned int cmd, void __user
@@ -107,7 +107,7 @@ index c1d3aba..57afc6f 100644
  #ifdef CONFIG_KSU_SUSFS_SUS_MAP
          case CMD_SUSFS_ADD_SUS_MAP:
 -            susfs_add_sus_map(arg);
-+            susfs_add_sus_map((struct st_susfs_sus_map __user *)arg);
++            /* susfs_add_sus_map not available on 4.19 SUSFS; ignore */
              return 0;
  #endif // #ifdef CONFIG_KSU_SUSFS_SUS_MAP
          case CMD_SUSFS_ENABLE_AVC_LOG_SPOOFING:
