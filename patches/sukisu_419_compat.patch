@@ -1,0 +1,113 @@
+diff --git a/kernel/infra/kernel_compat.h b/kernel/infra/kernel_compat.h
+index 5b10ee7..9b5a9e9 100644
+--- a/kernel/infra/kernel_compat.h
++++ b/kernel/infra/kernel_compat.h
+@@ -1,6 +1,19 @@
+ #ifndef __KSU_H_KERNEL_COMPAT
+ #define __KSU_H_KERNEL_COMPAT
+ 
++/* 4.19 does not provide the fallthrough pseudo-keyword */
++#ifndef fallthrough
++#if defined(__has_attribute)
++#if __has_attribute(fallthrough)
++#define fallthrough __attribute__((fallthrough))
++#else
++#define fallthrough do {} while (0)
++#endif
++#else
++#define fallthrough do {} while (0)
++#endif
++#endif
++
+ #if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 9, 0)) && (LINUX_VERSION_CODE < KERNEL_VERSION(4, 10, 0)) ||              \
+     (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0)) && (LINUX_VERSION_CODE < KERNEL_VERSION(4, 15, 0))
+ #ifdef HISI_SELINUX_EBITMAP_RO
+diff --git a/kernel/runtime/ksud.c b/kernel/runtime/ksud.c
+index eed56f9..4b3a434 100644
+--- a/kernel/runtime/ksud.c
++++ b/kernel/runtime/ksud.c
+@@ -1,6 +1,10 @@
+ bool ksu_module_mounted __read_mostly = false;
+ bool ksu_boot_completed __read_mostly = false;
+ 
++/* forward declarations (compat for builtin layout) */
++void ksu_selinux_hide_handle_second_stage(void);
++void ksu_selinux_hide_handle_post_fs_data(void);
++
+ static const char KERNEL_SU_RC[] =
+     "\n"
+ 
+diff --git a/kernel/sulog/event.c b/kernel/sulog/event.c
+index e45f01f..c9ba12f 100644
+--- a/kernel/sulog/event.c
++++ b/kernel/sulog/event.c
+@@ -142,7 +142,7 @@ static __u32 ksu_sulog_flatten_argv(struct user_arg_ptr *argv_user, char *dst, _
+             return ksu_sulog_copy_empty_string(dst);
+ 
+         copied =
+-            strncpy_from_user_nofault(arg, (const void __user *)untagged_addr((unsigned long)arg_user), sizeof(arg));
++            ksu_strncpy_from_user_nofault(arg, (const void __user *)untagged_addr((unsigned long)arg_user), sizeof(arg));
+         if (copied <= 0)
+             return ksu_sulog_copy_empty_string(dst);
+ 
+diff --git a/kernel/supercall/dispatch.c b/kernel/supercall/dispatch.c
+index c1d3aba..57afc6f 100644
+--- a/kernel/supercall/dispatch.c
++++ b/kernel/supercall/dispatch.c
+@@ -401,10 +401,10 @@ int ksu_handle_sys_reboot(int magic1, int magic2, unsigned int cmd, void __user
+         switch(cmd) {
+ #ifdef CONFIG_KSU_SUSFS_SUS_PATH
+         case CMD_SUSFS_ADD_SUS_PATH:
+-            susfs_add_sus_path(arg);
++            susfs_add_sus_path((struct st_susfs_sus_path __user *)arg);
+             return 0;
+         case CMD_SUSFS_ADD_SUS_PATH_LOOP:
+-            susfs_add_sus_path_loop(arg);
++            susfs_add_sus_path_loop((struct st_susfs_sus_path __user *)arg);
+             return 0;
+ #endif // #ifdef CONFIG_KSU_SUSFS_SUS_PATH
+ #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
+@@ -414,18 +414,18 @@ int ksu_handle_sys_reboot(int magic1, int magic2, unsigned int cmd, void __user
+ #endif // #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
+ #ifdef CONFIG_KSU_SUSFS_SUS_KSTAT
+         case CMD_SUSFS_ADD_SUS_KSTAT:
+-            susfs_add_sus_kstat(arg);
++            susfs_add_sus_kstat((struct st_susfs_sus_kstat __user *)arg);
+             return 0;
+         case CMD_SUSFS_UPDATE_SUS_KSTAT:
+-            susfs_update_sus_kstat(arg);
++            susfs_update_sus_kstat((struct st_susfs_sus_kstat __user *)arg);
+             return 0;
+         case CMD_SUSFS_ADD_SUS_KSTAT_STATICALLY:
+-            susfs_add_sus_kstat(arg);
++            susfs_add_sus_kstat((struct st_susfs_sus_kstat __user *)arg);
+             return 0;
+ #endif // #ifdef CONFIG_KSU_SUSFS_SUS_KSTAT
+ #ifdef CONFIG_KSU_SUSFS_SPOOF_UNAME
+         case CMD_SUSFS_SET_UNAME:
+-            susfs_set_uname(arg);
++            susfs_set_uname((struct st_susfs_uname __user *)arg);
+             return 0;
+ #endif // #ifdef CONFIG_KSU_SUSFS_SPOOF_UNAME
+ #ifdef CONFIG_KSU_SUSFS_ENABLE_LOG
+@@ -435,17 +435,17 @@ int ksu_handle_sys_reboot(int magic1, int magic2, unsigned int cmd, void __user
+ #endif // #ifdef CONFIG_KSU_SUSFS_ENABLE_LOG
+ #ifdef CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG
+         case CMD_SUSFS_SET_CMDLINE_OR_BOOTCONFIG:
+-            susfs_set_cmdline_or_bootconfig(arg);
++            susfs_set_cmdline_or_bootconfig((char __user *)arg);
+             return 0;
+ #endif // #ifdef CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG
+ #ifdef CONFIG_KSU_SUSFS_OPEN_REDIRECT
+         case CMD_SUSFS_ADD_OPEN_REDIRECT:
+-            susfs_add_open_redirect(arg);
++            susfs_add_open_redirect((struct st_susfs_open_redirect __user *)arg);
+             return 0;
+ #endif // #ifdef CONFIG_KSU_SUSFS_OPEN_REDIRECT
+ #ifdef CONFIG_KSU_SUSFS_SUS_MAP
+         case CMD_SUSFS_ADD_SUS_MAP:
+-            susfs_add_sus_map(arg);
++            susfs_add_sus_map((struct st_susfs_sus_map __user *)arg);
+             return 0;
+ #endif // #ifdef CONFIG_KSU_SUSFS_SUS_MAP
+         case CMD_SUSFS_ENABLE_AVC_LOG_SPOOFING:
