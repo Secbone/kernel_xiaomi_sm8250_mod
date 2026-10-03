@@ -23,10 +23,10 @@ index 5b10ee7..9b5a9e9 100644
      (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0)) && (LINUX_VERSION_CODE < KERNEL_VERSION(4, 15, 0))
  #ifdef HISI_SELINUX_EBITMAP_RO
 diff --git a/kernel/runtime/ksud.c b/kernel/runtime/ksud.c
-index eed56f9..d4d0be7 100644
+index eed56f9..4bb6bcb 100644
 --- a/kernel/runtime/ksud.c
 +++ b/kernel/runtime/ksud.c
-@@ -1,6 +1,22 @@
+@@ -1,6 +1,20 @@
  bool ksu_module_mounted __read_mostly = false;
  bool ksu_boot_completed __read_mostly = false;
  
@@ -41,9 +41,7 @@ index eed56f9..d4d0be7 100644
 +#endif
 +
 +/* ksu_handle_devpts() is referenced by drivers/tty/pty.c on some non-GKI kernels. */
-+#if defined(CONFIG_KSU_MANUAL_HOOK)
-+int ksu_handle_devpts(struct inode *inode) { return 0; }
-+#endif
++__weak int ksu_handle_devpts(struct inode *inode) { return 0; }
 +
 +
  static const char KERNEL_SU_RC[] =
