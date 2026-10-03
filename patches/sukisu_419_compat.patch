@@ -23,16 +23,28 @@ index 5b10ee7..9b5a9e9 100644
      (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0)) && (LINUX_VERSION_CODE < KERNEL_VERSION(4, 15, 0))
  #ifdef HISI_SELINUX_EBITMAP_RO
 diff --git a/kernel/runtime/ksud.c b/kernel/runtime/ksud.c
-index eed56f9..4b3a434 100644
+index eed56f9..d4d0be7 100644
 --- a/kernel/runtime/ksud.c
 +++ b/kernel/runtime/ksud.c
-@@ -1,6 +1,10 @@
+@@ -1,6 +1,22 @@
  bool ksu_module_mounted __read_mostly = false;
  bool ksu_boot_completed __read_mostly = false;
  
-+/* forward declarations (compat for builtin layout) */
++/* ===== 4.19 compatibility stubs ===== */
++/* selinux_hide.c is only compiled on kernel >= 5.10, so provide no-op stubs. */
++#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 10, 0)
++void ksu_selinux_hide_handle_second_stage(void) {}
++void ksu_selinux_hide_handle_post_fs_data(void) {}
++#else
 +void ksu_selinux_hide_handle_second_stage(void);
 +void ksu_selinux_hide_handle_post_fs_data(void);
++#endif
++
++/* ksu_handle_devpts() is referenced by drivers/tty/pty.c on some non-GKI kernels. */
++#if defined(CONFIG_KSU_MANUAL_HOOK)
++int ksu_handle_devpts(struct inode *inode) { return 0; }
++#endif
++
 +
  static const char KERNEL_SU_RC[] =
      "\n"
